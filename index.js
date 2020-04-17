@@ -47,7 +47,16 @@ axios.get(`https://api.blockcypher.com/v1/btc/test3/addrs/${address}?unspentOnly
   //reciver address
   tx.addOutput(to, sendingValue);  
   tx.sign(0, key);
-  console.log(tx.build().toHex());
+  const txHex = tx.build().toHex();
+
+  const pushtx = {
+      tx: txHex
+  }
+
+  // push the transaction 
+  axios.post("https://api.blockcypher.com/v1/bcy/test/txs/push", pushtx).then(res => {
+      console.log(res.data);
+  })
 });
 
   
