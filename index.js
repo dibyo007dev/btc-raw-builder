@@ -25,6 +25,14 @@ axios.get(`https://api.blockcypher.com/v1/btc/test3/addrs/${address}?unspentOnly
 
     const balance = res.data.balance;
 
+    var trxDetails = { utxoUsed : []}
+
+    trxDetails.from = address
+    trxDetails.to = to
+    trxDetails.balance = res.data.balance;
+    trxDetails.value = sendingValue;
+    trxDetails.fee = fee;
+
     var tx = new btcLib.TransactionBuilder(testnet);
 
     var currBal = 0;
@@ -32,32 +40,38 @@ axios.get(`https://api.blockcypher.com/v1/btc/test3/addrs/${address}?unspentOnly
         res.data.txrefs.map(transObj => {
             if(currBal < sendingValue){
                 currBal += transObj.value;
-                n = transObj.tx_output_n;
-                tx_hash = transObj.tx_hash;
 
-                tx.addInput(tx_hash,n);
+                trxDetails.utxoUsed.push({ n : transObj.tx_output_n, tx_hash : transObj.tx_hash })
+
+                // n = transObj.tx_output_n;
+                // tx_hash = transObj.tx_hash;
+
+                // tx.addInput(tx_hash,n);
             }
         })
     }
 
     var returnBack = currBal - sendingValue - fee ;
 
+    trxDetails.feed_back = returnBack;
+
+    console.log(trxDetails);
+
 // Get transaction to add-up to required amount
 
   //reciver address
-  tx.addOutput(to, sendingValue);  
-  tx.sign(0, key);
-  const txHex = tx.build().toHex();
+//   tx.addOutput(to, sendingValue);
+//   tx.addOutput(from, returnBack);  
+//   tx.sign(0, key);
+//   const txHex = tx.build().toHex();
 
-  const pushtx = {
-      tx: txHex
-  }
+//   const pushtx = {
+//       tx: txHex
+//   }
 
   // push the transaction 
-  axios.post("https://api.blockcypher.com/v1/bcy/test/txs/push", pushtx).then(res => {
-      console.log(res.data);
-  })
-});
-
-  
+//   axios.post("https://api.blockcypher.com/v1/bcy/test/txs/push", pushtx).then(res => {
+//       console.log(res.data);
+//   })
+    });  
 });
