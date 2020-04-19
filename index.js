@@ -9,16 +9,18 @@ const seed = bip39.mnemonicToSeed("neglect come animal country jump when oyster 
 seed.then((val) => {
   let testnet = btcLib.networks.testnet;
   var ec = btcLib.bip32.fromSeed(val, testnet);
-  var rroot = ec.derivePath("m/44'/0'/0'/0/2");
+
+  var derivationPath = "m/44'/0'/0'/0/7";
+  var rroot = ec.derivePath(derivationPath);
 
   var key = btcLib.ECPair.fromWIF(rroot.toWIF(), testnet);
   const { address } = btcLib.payments.p2pkh({ pubkey: key.publicKey,network:testnet });
     console.log("Private Key : ", key.__D.toString('hex'));
     console.log("Address : ", address);
 
-    var to = "morG3S6BCWF4f3VHmDe9uPbPCRmtYbGjbe";
-    var sendingValue = 8000;
-    const fee = 500;
+    var to = "mqKLcLsNuYeTvVisHeYsLnCjgdT1wf4Sk6";
+    var sendingValue = 5000;
+    const fee = 1000;
 
 axios.get(`https://api.blockcypher.com/v1/btc/test3/addrs/${address}?unspentOnly=true`).then(res => {
     console.log("My Response : ", res.data);
@@ -28,20 +30,21 @@ axios.get(`https://api.blockcypher.com/v1/btc/test3/addrs/${address}?unspentOnly
     var trxDetails = { utxoUsed : []}
 
     trxDetails.from = address
+    trxDetails.path = derivationPath
     trxDetails.to = to
     trxDetails.balance = res.data.balance;
     trxDetails.value = sendingValue;
     trxDetails.fee = fee;
 
-    var tx = new btcLib.TransactionBuilder(testnet);
+    // var tx = new btcLib.TransactionBuilder(testnet);
 
     var currBal = 0;
-    if(balance > sendingValue){
+    if(balance > sendingValue + fee){
         res.data.txrefs.map(transObj => {
             if(currBal < sendingValue){
                 currBal += transObj.value;
 
-                trxDetails.utxoUsed.push({ n : transObj.tx_output_n, tx_hash : transObj.tx_hash })
+                trxDetails.utxoUsed.push({ n : transObj.tx_output_n, tx_hash : transObj.tx_hash, value : transObj.value, feed_back: 0, fee : 0 })
 
                 // n = transObj.tx_output_n;
                 // tx_hash = transObj.tx_hash;
@@ -50,10 +53,25 @@ axios.get(`https://api.blockcypher.com/v1/btc/test3/addrs/${address}?unspentOnly
             }
         })
     }
+    else {
+        throw new Error("Tx not possible ");
+    }
 
     var returnBack = currBal - sendingValue - fee ;
 
-    trxDetails.feed_back = returnBack;
+    console.log(returnBack);
+
+    var lenTrx = trxDetails.utxoUsed.length ;
+
+    trxDetails.utxoUsed[lenTrx - 1].feed_back = returnBack;
+
+    var fee_split = fee/lenTrx;
+
+    trxDetails.utxoUsed.map(trxRef => {
+        trxRef.fee = fee_split;
+    })
+
+    trxDetails.net_feed_back = returnBack;
 
     console.log(trxDetails);
 
@@ -74,4 +92,5 @@ axios.get(`https://api.blockcypher.com/v1/btc/test3/addrs/${address}?unspentOnly
 //       console.log(res.data);
 //   })
     });  
+    
 });
