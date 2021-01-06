@@ -10,7 +10,7 @@
   "author": "Heisenberg",
   "license": "ISC",
   "dependencies": {
-    "axios": "^0.19.2",
+    "axios": "^0.21.1",
     "bitcoinjs-lib": "^5.1.7"
   }
 }
